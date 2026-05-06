@@ -24,7 +24,7 @@ Settings.chunk_overlap = 100
 
 PERSIST_DIR = "./storage" # data
 
-def run_rag():
+def run_rag():                                                          
     
     file_extractor = {".pdf": PyMuPDFReader()} #pdf file extract 
 
