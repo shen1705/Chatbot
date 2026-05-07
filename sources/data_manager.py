@@ -1,34 +1,50 @@
-#import chromadb #database
 import os
-from dotenv import load_dotenv
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext,load_index_from_storage
-from llama_index.readers.file import PyMuPDFReader #pdf reader
-from .config import Settings, PERSIST_DIR , DATA_DIR
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, load_index_from_storage
+from llama_index.core.node_parser import SentenceSplitter
+from llama_parse import LlamaParse
+from .config import PERSIST_DIR, DATA_DIR
 
-load_dotenv()
-DB_API_KEY = os.getenv("DB_API_KEY")
-def data_ingest(persist_dir=PERSIST_DIR):
-    file_extractor = {".pdf": PyMuPDFReader()}#pdf file extract 
-    print("[INFO] Processing")
-    reader = SimpleDirectoryReader("./data",file_extractor=file_extractor)
+def data_ingest():
+    llamaparse_api_key = os.getenv("llamaparse_api_key")
+    
+    parser = LlamaParse(
+        api_key=llamaparse_api_key,
+        result_type="markdown",            
+        verbose=True
+    )
+    
+    file_extractor = {".pdf": parser}
+    print(f"[INFO] Processing documents: {DATA_DIR}")
+    
+    reader = SimpleDirectoryReader(
+        DATA_DIR, 
+        file_extractor=file_extractor,
+        recursive=True
+    )
+    
     documents = reader.load_data()
-    print("[INFO]Saving to storage")
-    index = VectorStoreIndex.from_documents(documents,show_progress = True)
-    index.storage_context.persist(persist_dir = persist_dir)
-    print(f"[INFO]Saved to {persist_dir}")
+    
+    splitter = SentenceSplitter(
+        chunk_size=1024, 
+        chunk_overlap=100,
+        separator="\n" 
+    )
+    
+    nodes = splitter.get_nodes_from_documents(documents)
+    index = VectorStoreIndex(nodes, show_progress=True)
+    
+    if not os.path.exists(PERSIST_DIR):
+        os.makedirs(PERSIST_DIR)
+        
+    index.storage_context.persist(persist_dir=PERSIST_DIR)
+    print(f"[SUCCESS] Data is saved to {PERSIST_DIR}")
     return index
 
-def data_load(persist_dir=PERSIST_DIR):
-    #data load from storage
-    print("Data is loading from storage")
-    storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
-    index = load_index_from_storage(storage_context)
-    return index
-
-
-#chroma database
-#client = chromadb.CloudClient(
- # api_key= DB_API_KEY
-  #tenant='ead776a0-cb65-42c8-b959-a448fc1ee6ff',
-  #database='ChatbotAnxx'
-#)
+def data_load():
+    if not os.path.exists(PERSIST_DIR):
+        print("[WARNING] No storage found, ingesting new data")
+        return data_ingest()
+        
+    print(f"[INFO] Loading from {PERSIST_DIR}...")
+    storage_context = StorageContext.from_defaults(persist_dir=PERSIST_DIR)
+    return load_index_from_storage(storage_context)
