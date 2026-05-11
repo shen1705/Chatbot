@@ -1,5 +1,6 @@
 from sources.engine import ChatEngine
 import sys
+query_engine = index.as_query_engine(similarity_top_k=5)
 
 def main():
     print("--- Starting  ---")
