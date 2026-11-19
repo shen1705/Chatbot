@@ -26,7 +26,7 @@ async def chat_endpoint(request: ChatRequest):
         raise HTTPException(status_code=500, detail="Engine not initialized")
     
     try:
-        response = await bot.query_engine.aquery(request.message)
+        response = await bot.aget_response(request.message)
         
         return {
             "reply": str(response),

@@ -46,3 +46,16 @@ class ChatEngine:
         )        
         #query
         return self.query_engine.query(user_query)
+
+    async def aget_response(self, user_query: str):
+        #get dynamic fewshot
+        dynamic_shots = self._get_dynamic_few_shots(user_query)
+        #create prompt 
+        final_prompt_str = RAG_PROMPT_TEMPLATE.replace("{dynamic_few_shots}", dynamic_shots)
+        #create prompt template
+        dynamic_qa_prompt = PromptTemplate(final_prompt_str)
+        self.query_engine.update_prompts(
+            {"response_synthesizer:text_qa_template": dynamic_qa_prompt}
+        )
+        #async query
+        return await self.query_engine.aquery(user_query)

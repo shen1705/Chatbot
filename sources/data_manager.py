@@ -5,7 +5,7 @@ from llama_parse import LlamaParse
 from .config import PERSIST_DIR, DATA_DIR
 
 def data_ingest():
-    llamaparse_api_key = os.getenv("llamaparse_api_key")
+    llamaparse_api_key = os.getenv("LLAMAPARSE_API_KEY") or os.getenv("llamaparse_api_key")
     
     parser = LlamaParse(
         api_key=llamaparse_api_key,
